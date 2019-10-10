@@ -39,8 +39,9 @@ function drawChart(dataset) {
 
   console.log(minX);
   console.log(maxX);
-  console.log(minY);
-  console.log(maxY);
+  console.log(new Date(minY * 1000));
+  console.log(new Date(maxY * 1000));
+
 
   // Scales
   // X: Year
@@ -48,15 +49,22 @@ function drawChart(dataset) {
       .scaleTime()
       .domain(
           d3.extent(dataset, function(d) {
-            return new Date(d['Year']);
+            return new Date(d['Year'].toString());
           })
       )
+      .nice()
       .range([padding, w - padding]);
 
   // Y: Time(Seconds)
   const yScale = d3
-      .scaleLinear()
-      .domain([minY, maxY])
+      .scaleTime()
+      .domain(
+          d3.extent(dataset, function(d) {
+            const time = d['Time'].split(':');
+            return new Date(Date.UTC(0, 0, 0, 0, time[0], time[1], 0));
+          }).reverse() // invert d3.extent
+      )
+      .nice()
       .range([h - padding, padding]);
 
   const svg = d3
@@ -70,22 +78,33 @@ function drawChart(dataset) {
       .data(dataset)
       .enter()
       .append('circle')
-      .attr('cx', (d) => xScale(new Date(d['Year'])))
-      .attr('cy', (d) => h - yScale(d['Seconds']))
+      .attr('class', 'dot') // required for fcc test
+      .attr('data-xvalue', (d) => new Date(d['Year'].toString()))
+      .attr('data-yvalue', (d) => {
+        const time = d['Time'].split(':');
+        date = new Date(Date.UTC(0, 0, 0, 0, time[0], time[1], 0));
+        return date;
+      })
+      .attr('cx', (d) => xScale(new Date(d['Year'].toString())))
+      .attr('cy', (d) => {
+        const time = d['Time'].split(':');
+        date = new Date(Date.UTC(0, 0, 0, 0, time[0], time[1], 0));
+        return yScale(date);
+      })
       .attr('r', r);
 
-  // Display axes
+  // Configure axes
   const xAxis = d3.axisBottom(xScale);
-  const yAxis = d3.axisLeft(yScale);
+  const yAxis = d3.axisLeft(yScale).ticks(d3.timeSecond.every(15)).tickFormat(d3.timeFormat('%M:%S'));
 
-  // x-axis
+  // Draw x-axis
   svg
       .append('g')
       .attr('transform', 'translate(0,' + (h - padding) + ')')
       .attr('id', 'x-axis') // required for the fcc test
       .call(xAxis);
 
-  // y-axis
+  // Draw y-axis
   svg
       .append('g')
       .attr('transform', 'translate(' + padding + ', 0)')
