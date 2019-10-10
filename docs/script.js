@@ -91,11 +91,29 @@ function drawChart(dataset) {
         date = new Date(Date.UTC(0, 0, 0, 0, time[0], time[1], 0));
         return yScale(date);
       })
-      .attr('r', r);
+      .attr('r', r)
+      // tooltip
+      .on('mouseover', function(d) {
+        tooltip.style('visibility', 'visible')
+            // id is required for fcc test
+            .html(d['Name'] + ': ' + d['Nationality'] +
+            '<br>' + 'Year: ' + d['Year'] + ', Time:' + d['Time'] + '<br>' +
+            '<legend id="legend">' + d['Doping'] + '</legend>')
+            // required for fcc test
+            .attr('data-year', new Date(d['Year'].toString()));
+      })
+      .on('mousemove', function(d) {
+        tooltip.style('top', (d3.event.pageY - 20) + 'px')
+            .style('left', (d3.event.pageX + 10) + 'px');
+      })
+      .on('mouseout', function(d) {
+        tooltip.style('visibility', 'hidden');
+      });
 
   // Configure axes
   const xAxis = d3.axisBottom(xScale);
-  const yAxis = d3.axisLeft(yScale).ticks(d3.timeSecond.every(15)).tickFormat(d3.timeFormat('%M:%S'));
+  const yAxis = d3.axisLeft(yScale)
+      .ticks(d3.timeSecond.every(15)).tickFormat(d3.timeFormat('%M:%S'));
 
   // Draw x-axis
   svg
@@ -110,4 +128,10 @@ function drawChart(dataset) {
       .attr('transform', 'translate(' + padding + ', 0)')
       .attr('id', 'y-axis') // required for the fcc test
       .call(yAxis);
+
+  // Tooltip
+  const tooltip = d3.select('body')
+      .append('div')
+      .attr('class', 'tooltip')
+      .attr('id', 'tooltip'); // required for fcc test
 };
